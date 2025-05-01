@@ -1,0 +1,5 @@
+src/build_*
+src/deploy
+*.log
+*.jou
+*.str

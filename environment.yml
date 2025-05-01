@@ -1,0 +1,35 @@
+name: ultra96
+channels:
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=1_gnu
+  - ca-certificates=2025.2.25=h06a4308_0
+  - certifi=2021.5.30=py36h06a4308_0
+  - libedit=3.1.20230828=h5eee18b_0
+  - libffi=3.2.1=hf484d3e_1007
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - ncurses=6.4=h6a678d5_0
+  - openssl=1.0.2u=h7b6447c_0
+  - pip=21.2.2=py36h06a4308_0
+  - python=3.6.5=hc3d631a_2
+  - readline=7.0=h7b6447c_5
+  - setuptools=58.0.4=py36h06a4308_0
+  - sqlite=3.33.0=h62c20be_0
+  - tk=8.6.14=h39e8969_0
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - xz=5.6.4=h5eee18b_1
+  - zlib=1.2.13=h5eee18b_1
+  - pip:
+      - cffi==1.15.1
+      - numpy==1.19.5
+      - pandas==1.1.5
+      - pycparser==2.21
+      - pynq==2.6.0
+      - python-dateutil==2.9.0.post0
+      - pytz==2025.2
+      - six==1.17.0
