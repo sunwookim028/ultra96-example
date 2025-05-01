@@ -312,14 +312,15 @@ sudo python3 host.py vvadd.bit 1024
 
 If you see the following output:
 ```
+Programming hardware with bitstream vvadd.bit
 Running vector-vector add of size 1024
-Software vvadd finished in 0.06306299474090338 ms
-Hardware vvadd finished in 0.4180169926257804 ms
+Software vvadd finished in 0.6290149995038519 ms
+Hardware vvadd finished in 0.4633290009223856 ms
 Results match!
-Speedup: 0.15x
+Speedup: 1.36x
 ```
-Congratulations! You have successfully run your first "hardware-accelerated" program on the Ultra96-V2 board!
-There can be various reasons for the speedup to be less than 1x, but optimizing the design is out of the scope of this tutorial.
+Congratulations! You have successfully run your first hardware-accelerated program on the Ultra96-V2 board!
+There can be various reasons for the speedup to be only slightly above 1x, but optimizing the design is out of the scope of this tutorial.
 
 ## Closing Remarks
 This tutorial only reveals the tip of the iceberg of what you can do with HLS, PYNQ, and the Ultra96-V2 board.
