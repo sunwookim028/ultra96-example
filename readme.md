@@ -5,8 +5,8 @@ This tutorial provides a starting example for hardware acceleration using PYNQ o
 
 ## Pre-requisites
 A Linux machine with:
-- Vitis HLS 2023.2
-- Vivado 2023.2
+- Vitis HLS 2022.1
+- Vivado 2022.1
 - Graphical interface (either you directly run a GUI Linux OS like Ubuntu Desktop, or use a remote desktop solution)
 - Access to a PYNQ Ultra96-V2 board
 
@@ -53,26 +53,19 @@ source setup.sh
 
 Also please check you can reach the Ultra96-V2 board via SSH. Our research servers have network access to them, but from your local machine you must connect to **Cornell ECE Departmental VPN** (it different than the Cornell VPN!).
 
-The username of the board is `xilinx`. Please ask your mentor for the password.
-Once the password is set as a environment variable, you can use the following script to check the status of our boards:
-```bash
-# asssume ULTRA96_PASSWD is set to the correct password
-./report-status.sh
-```
-After a while you should see something like:
-```
-132.236.59.63: Unable to connect
-132.236.59.64: Unable to connect
-132.236.59.68: Unable to connect
-132.236.59.70: Unable to connect
-132.236.59.71: Up and running
-132.236.59.72: Unable to connect
-132.236.59.75: Up and running
-132.236.59.76: Up and running
-132.236.59.77: Unable to connect
-132.236.59.80: Unable to connect
-```
-Then you can try to login to the boards that are up and running with `ssh xilinx@<ip>`.
+The username of the board is `xilinx`. Please ask your mentor for the password. Here are alist of device IP addresses:
+- 132.236.59.63
+- 132.236.59.64
+- 132.236.59.68
+- 132.236.59.70
+- 132.236.59.71
+- 132.236.59.72
+- 132.236.59.75
+- 132.236.59.76
+- 132.236.59.77
+- 132.236.59.80
+Not all of them are up and running. You need to try SSH and see which ones are available.
+Also, since these boards use an SD card as the disk, they have the risk of file system corruption. If you see weird file IO errors please avoid using that board.
 
 ### 2. Use Vitis HLS to Generate the Verilog Code
 I have provided the C++ implementation for the vector-vector addition accelerator in `src/vvadd.cpp`. It is a simple function that takes two vectors of floats and adds them together. We will use Vitis HLS to convert this C++ code into Verilog code that can be synthesized into hardware, with the following steps:
@@ -150,9 +143,7 @@ double-click the found IP to add it to the block design. You should see a block 
 **3.3.2: Add other IPs.**
 Now we need to connect it to the ARM processor. We will do so by creating the following IPs:
 - Clocking Wizard (x1)
-- Processor System Reset (x1)
 - Zynq UltraScale+ MPSoC (x1)
-- AXI SmartConnect (x2)
 
 We add these IPs in the same way as we added the HLS IP. Now we should have a block design similar to this:
 <div align="center">
@@ -170,37 +161,19 @@ Click "OK" to confirm.
 
 > Please set this value according to the timing results of your design. An overly high frequency may cause it to crash.
 
-Now the two AXI SmartConnect blocks. We will configure them in the same way. Double-click the first one, named "smartconnect_0", set the "Number of Slave Interfaces" to 1, "Number of Master Interfaces" to 1, "Number of Clock Inputs" to 2, and "Has ARESETN Input" to 1:
-<div align="center">
-<img src="images/config_axi_smc.png"/>
-</div>
-click "OK" to confirm. Then do the same thing for the second one "smartconnect_1".
-
-Finally we configure the Zynq UltraScale+ MPSoC. Double-click the block named "zynq_ultra_ps_e_0", select "PS-PL Configuration" in the left panel, check the box after "PS-PL Interfaces > Slave Interface > S_AXI_ACP > Use S_AXI_ACP":
+Then we configure the Zynq UltraScale+ MPSoC. Double-click the block named "zynq_ultra_ps_e_0", select "PS-PL Configuration" in the left panel, check the box after "PS-PL Interfaces > Slave Interface > AXI HP > AXI HPC0 FPD" and set the data width to 32 bits:
 <div align="center">
 <img src="images/config_zynq_ps.png"/>
 </div>
 
 **3.3.4: Connect the IPs.**
-Next we connect those IPs to form a complete system. Click and drag from the `M_AXI_HPM0_LPD` output port of "zynq_ultra_ps_e_0" to connect it to the `S00_AXI` input port of the "smartconnect_0" block; and do the same for the `M00_AXI` output port of "smartconnect_0" to the `s_axi_control` input port of "vvadd_0". The connection should look like this:
-<div align="center">
-<img src="images/ps_smc0_vvadd_intf_connect.png"/>
-</div>
+Now it's time to connect some wires. We will leverage the "connection automation" feature of Vivado to automatically create bridging IPs for clock-domain corssing and asynchronous reset handling.
+
 
 > You can drag the blocks around to make the diagram look nicer.
 > You can also use the "Regenerate Layout" (<img src="images/btn_regenerate_layout.png"/>) button to automatically arrange the blocks.
 
-Now do the same for `m_axi_gmem` output port of "vvadd_0" to the `S00_AXI` input port of "smartconnect_1", and `M00_AXI` output port of "smartconnect_1" to the `S_AXI_ACP_FPD` input port of "zynq_ultra_ps_e_0".
-
-Next, connect the `pl_clk0` output of "zynq_ultra_ps_e_0" to the `clk_in1` input of "clk_wiz_0", the `aclk` input of "smartconnect_0", and the `aclk1` input of "smartconnect_1".
-
-Next, connect the `clk_out1` output of "clk_wiz_0" to the `ap_clk` input of "vvadd_0", `slowest_sync_clk` input of "proc_sys_reset_0", `aclk1` input of "smartconnect_0", and `aclk` input of "smartconnect_1".
-
-Next, connect the `peripheral_aresetn` output of "proc_sys_reset_0" to the `ap_rst_n` input of "vvadd_0" and the `aresetn` input of "smartconnect_1".
-
-Next, connect the `pl_resetn0` output of "zynq_ultra_ps_e_0" to the `resetn` input of "clk_wiz_0", `aresetn` input of "smartconnect_0", and `ext_reset_in` input of "proc_sys_reset_0",
-
-Finally, connect the `locked` output of "clk_wiz_0" to the `dcm_locked` input of "proc_sys_reset_0". The rest pins do not need to be connected. You should see a diagram like this:
+The rest pins do not need to be connected. You should see a diagram like this:
 <div align="center">
 <img src="images/connected_bd.png"/>
 </div>
@@ -228,7 +201,9 @@ The first 2GB space is the shard memory between the ARM processor and the PL. Th
 
 #### 3.4 Generate the Bitstream
 
-Get back to the "Diagram" tab. Click the ![]() button to validate the design. If everything is correct you should see a pop-up window saying "Validation successful. There are no errors or cirtical warnings in the design". Click "OK" to confirm.
+Get back to the "Diagram" tab. Click the <img src="images/btn_validate_bd.png"/> button to validate the design. If everything is correct you should see a pop-up window saying "Validation successful. There are no errors or cirtical warnings in the design". Click "OK" to confirm.
+
+> If you see warnings like "[PSU-1]  Actual device frequency is : 479.995209. Minimum actual device frequency supported for DDR for current part is 500.000000.", it's safe to ignore them.
 
 A block design cannot be directly synthesized. We need to create a Verilog wrapper for it. In the "Sources" tab on the left of the "Diagram" tab, right-click the block design (design_1.bd) and select "Create HDL Wrapper":
 <div align="center">
@@ -266,8 +241,7 @@ cp host.py deploy/vvadd-example/host.py
 ```
 Now we can SCP the deployment files to the Ultra96-V2 board. We will directly place it at the home directory of the `xilinx` user:
 ```bash
-cd deploy
-scp -r vvadd-example xilinx@<ip>:~
+scp -r deploy/vvadd-example xilinx@<ip>:~
 ```
 `<ip>` is one of the IP addresses of a running board.
 
