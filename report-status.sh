@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Note: This script requires the sshpass command.
+
 # list of ultra96-board IPs
 BORAD_IPS=(\
 "132.236.59.63" \
@@ -31,6 +33,6 @@ for ip in "${BORAD_IPS[@]}"; do
     if [ $? -eq 0 ]; then
         echo "$ip: Up and running"
     else
-        echo "$ip: Unable to connect"
+        echo "$ip: Unable to connect in $timeout seconds"
     fi
 done
