@@ -49,11 +49,9 @@ cd ultra96-example
 We then need to setup the tools to generate the example vector-vector addition accelerator. We need Vitis HLS to trun our C++ code into Verilog, and use Vivado in GUI mode to generate the FPGA bitstream for the Ultra96-V2 board. Please make sure the `vitis_hls` and `vivado` tools are usable, also please check you can reach the Ultra96-V2 board via SSH.
 
 > <p style="color:Red; background-color:#FF000030"> For Conrell Zhang Research Group users:</p>
-> We will be using the `brg-zhang-xcel` server for this tutorial.
-> I have included a `setup.sh` script that will set things up on our research servers. On our servers, simply do:
-> ```bash
-> source setup.sh
-> ```
+> We will be using the <code>brg-zhang-xcel</code> server for this tutorial.
+> I have included a <code>setup.sh</code> script that will set things up on our research servers. On our servers, simply do:
+> <code>source setup.sh</code>.
 > Our research servers have direct network access to them, but from your local machine you must connect to **Cornell ECE Departmental VPN** (it is different than the Cornell VPN). The username of the all boards is `xilinx`. Please ask your mentor for the password.
 >
 > Here are the device IP addresses in our research lab:
@@ -170,9 +168,9 @@ Now we should have a block design with three blocks similar to this:
 The next step is to configure each IP correctly. Double-clicking any IP will open its customization window where we can tweak its parameters.
 
 Let's start with the Clocking Wizard. Double-click the block named "clk_wiz_0", a window named "Re-customize IP" will pop up. In the "Output Clocks" tab, set the requested output frequency to 200MHz and "Reset Type" to "Active Low". This will be the clock driving the accelerator:
-<div align="center" style="display: flex; justify-content: center; gap: 10px;">
-<img src="images/config_clk_1.png" style="width:50%;" />
-<img src="images/config_clk_2.png" style="width:50%;" />
+<div align="center" style="display: flex; justify-content: center; gap: 5%;">
+<img src="images/config_clk_1.png" style="width:47%;" />
+<img src="images/config_clk_2.png" style="width:47%;" />
 </div>
 Click "OK" to confirm.
 
@@ -180,7 +178,7 @@ Click "OK" to confirm.
 
 Then we configure the Zynq UltraScale+ MPSoC. Double-click the block named "zynq_ultra_ps_e_0", select "PS-PL Configuration" in the left panel, check the box after "PS-PL Interfaces > Slave Interface > AXI HP > AXI HPC0 FPD" and set the data width to 32 bits:
 <div align="center">
-<img src="images/config_zynq.png"/>
+<img src="images/config_zynq.png" style="width:80%;"/>
 </div>
 
 **3.3.3: Connect the IPs.**
@@ -194,12 +192,12 @@ A pop-up window will list the connections that the tool can make. We can configu
 
 For `clk_wiz_0` > `clk_in1`, use `/zynq_ultra_ps_e_0/pl_clk0` as the clock source:
 <div align="center">
-<img src="images/ca_clk_wiz_0_clk_in1.png"/>
+<img src="images/ca_clk_wiz_0_clk_in1.png" style="width:80%;"/>
 </div>
 
 For `clk_wiz_0` > `resetn`, use `/zynq_ultra_ps_e_0/pl_resetn0` as the reset source:
 <div align="center">
-<img src="images/ca_clk_wiz_0_resetn.png"/>
+<img src="images/ca_clk_wiz_0_resetn.png" style="width:80%;"/>
 </div>
 
 For `vvad_0` > `s_axi_control`:
@@ -207,7 +205,7 @@ For `vvad_0` > `s_axi_control`:
 - set "Clock source for Slave interface" to `/clk_wiz_0/clk_out1`"
 - set "Clock source for Master interface" to `zynq_ultra_ps_e_0/pl_clk0`:
 <div align="center">
-<img src="images/ca_vvadd_0_s_axi_control.png"/>
+<img src="images/ca_vvadd_0_s_axi_control.png" style="width:80%;"/>
 </div>
 
 For `zync_ultra_ps_e_0` > `S_AXI_HPC0_FPD`:
@@ -215,7 +213,7 @@ For `zync_ultra_ps_e_0` > `S_AXI_HPC0_FPD`:
 - set "Clock source for Slave interface" to `/zynq_ultra_ps_e_0/pl_clk0`"
 - set "Clock source for Master interface" to `/clk_wiz_0/clk_out1`:
 <div align="center">
-<img src="images/ca_zynq_ultra_ps_e_0_S_AXI_HPC0_FPD.png"/>
+<img src="images/ca_zynq_ultra_ps_e_0_S_AXI_HPC0_FPD.png" style="width:80%;"/>
 </div>
 
 Click "OK" to confirm. Vivado will automatically create the necessary bridging IPs and connect the wires. The rest pins do not need to be connected. You should see a diagram like this:
