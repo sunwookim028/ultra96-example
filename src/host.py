@@ -4,50 +4,10 @@ from collections import namedtuple
 
 from pynq.buffer import PynqBuffer as Buffer
 
-class ControlProtocol:
-    '''
-        Helper class to handle the ap_ctrl_hs protocol
-    '''
-    __bit_locations = {
-        "AP_START" : 0,
-        "AP_DONE" : 1,
-        "AP_IDLE" : 2,
-        "AP_READY" : 3,
-    }
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def set_start(self):
-        return 1 << self.__bit_locations["AP_START"]
-
-    @classmethod
-    def is_idle(self, status) -> bool:
-        return (status & (1 << self.__bit_locations["AP_IDLE"])) != 0
-
-    @classmethod
-    def is_done(self, status) -> bool:
-        return (status & (1 << self.__bit_locations["AP_DONE"])) != 0
-
-    @classmethod
-    def is_ready(self, status) -> bool:
-        return (status & (1 << self.__bit_locations["AP_READY"])) != 0
-
-
 class VectorAdd:
     '''
         Helper class to handle the vector add accelerator
     '''
-
-    # Note: these addresses must match the ones in the hardware handoff
-    interface_registers = {
-        "CRTL": 0,      # look for REGISTER NAME="CRTL"
-        "a": 16,        # look for REGISTER NAME="a_1"
-        "b": 28,        # look for REGISTER NAME="b_1"
-        "c": 40,        # look for REGISTER NAME="c_1"
-        "n": 52,        # look for REGISTER NAME="n"
-    }
 
     def __init__(self):
         self.hw_ready = False
@@ -64,14 +24,12 @@ class VectorAdd:
 
         self.bitstream_path = bitstream_path
         self.pynq_overlay = pynq.Overlay(bitstream_path)
-        self.vvadd_control = self.pynq_overlay.vvadd_0
+        self.vvadd = self.pynq_overlay.vvadd_0
         self.hw_ready = True
-        self.xlnk = pynq.Xlnk()
-        self.xlnk.xlnk_reset()
         self.reset_hw()
 
     def reset_hw(self):
-        self.vvadd_control.write(self.interface_registers["CRTL"], 0)
+        self.vvadd.register_map.CRTL = 0
 
     def load_vvadd_inputs(self, a:np.ndarray, b:np.ndarray):
         """
@@ -86,8 +44,8 @@ class VectorAdd:
         if a.dtype != np.float32:
             raise ValueError("Input arrays must be of type float32.")
 
-        self.a_buf:Buffer = pynq.buffer.allocate(shape=a.shape, dtype=np.float32)
-        self.b_buf:Buffer = pynq.buffer.allocate(shape=b.shape, dtype=np.float32)
+        self.a_buf:Buffer = pynq.buffer.allocate(shape=a.shape[0], dtype=np.float32)
+        self.b_buf:Buffer = pynq.buffer.allocate(shape=b.shape[0], dtype=np.float32)
         for i in range(a.shape[0]):
             self.a_buf[i] = a[i]
             self.b_buf[i] = b[i]
@@ -101,7 +59,7 @@ class VectorAdd:
         if n <= 0:
             raise ValueError("Output size must be greater than 0.")
 
-        self.c_buf:Buffer = pynq.buffer.allocate(shape=(n,), dtype=np.float32)
+        self.c_buf:Buffer = pynq.buffer.allocate(shape=n, dtype=np.float32)
 
     def run_hw_vvadd(self):
         """
@@ -115,24 +73,23 @@ class VectorAdd:
         self.b_buf.sync_to_device()
 
         # pass pointers to the accelerator
-        self.vvadd_control.write(self.interface_registers["a"], self.a_buf.physical_address)
-        self.vvadd_control.write(self.interface_registers["b"], self.b_buf.physical_address)
-        self.vvadd_control.write(self.interface_registers["c"], self.c_buf.physical_address)
+        self.vvadd.register_map.a_1 = self.a_buf.physical_address
+        self.vvadd.register_map.b_1 = self.b_buf.physical_address
+        self.vvadd.register_map.c_1 = self.c_buf.physical_address
+        self.vvadd.register_map.n = self.a_buf.shape[0]
 
         # Start the hardware accelerator
-        self.vvadd_control.write(self.interface_registers["CRTL"], ControlProtocol.set_start())
+        self.vvadd.register_map.CTRL.AP_START = 1
 
         # Wait for the hardware accelerator to finish
         start_time = time.perf_counter()
-        while not ControlProtocol.is_done(self.vvadd_control.read(self.interface_registers["CRTL"])):
+        while not self.vvadd.register_map.CTRL.AP_DONE:
             pass
         end_time = time.perf_counter()
         hw_time_ms = (end_time - start_time) * 1e3
 
-        self.c_buf.sync_from_device()
-        print(self.c_buf)
-
         # Read the output from the hardware accelerator
+        self.c_buf.sync_from_device()
         return np.frombuffer(self.c_buf, dtype=np.float32), hw_time_ms
 
 def main():
