@@ -1,5 +1,11 @@
+# Ignore build artifacts and temporary files
 build_*
 deploy
+
+# Ignore log files
 *.log
 *.jou
 *.str
+
+# Tutorial-specific ignores
+command_line/project_1.tcl
