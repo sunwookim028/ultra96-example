@@ -127,8 +127,9 @@ click the <img src="images/btn_add_ip.png"/> icon on the top of the "Diagram" ta
 </div>
 double-click the found IP to add it to the block design. You should see a block named "vvadd_0" in the diagram.
 Repeat the same process to add two other major IPs of our system:
-- Clocking Wizard
-- Zynq UltraScale+ MPSoC
+
+ - Clocking Wizard
+ - Zynq UltraScale+ MPSoC
 
 Now we should have a block design with three blocks similar to this:
 <div align="center">
