@@ -18,7 +18,7 @@ The Ultra96-V2 is a low-cost, low-power development board based on the Xilinx Zy
 
 <div align="center">
 
-<img src="images/TNN22685-front.jpg" alt="Front view of the Ultra96-V2 board" style="width:300px; height:200px;" />
+<img src="TNN22685-front.jpg" alt="Front view of the Ultra96-V2 board" style="width:300px; height:200px;" />
 
 <i>Ultra96-V2 board. Source: <a herf="https://www.avnet.com/americas/products/avnet-boards/avnet-board-families/ultra96-v2/">avnet.com</a></i>
 
