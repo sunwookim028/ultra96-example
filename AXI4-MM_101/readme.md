@@ -21,20 +21,18 @@ Building a highly optimized AXI-MM system is a complex task and far exceeds the 
 
 > Although in ARM's terms, the master is called the **manager** and the slave is called the **subordinate**, master/slave is still more widely used in practice.
 
-<detials>
+<details>
 <summary> Quiz </summary>
 Which one of the following is a valid AXI4-MM connection?
 <div align="center">
 <img src="images/quiz1.png"/>
 </div>
-
-<detials>
+<details>
 <summary> Answer </summary>
 A <br>
 B connects a master and a slave from different clocks. C connects two masters. D connects one master to two slaves.
-</detials>
-
-</detials>
+</details>
+</details>
 
 AXI4-MM adpots a decoupled address/data protocol --- the address and data can be transferred at different times. It is done by implementing five valid-ready handshake **channels**:
 - **Read Address Channel (AR)**: the master sends the address of the data to be read on this channel.
@@ -55,20 +53,18 @@ A valid address assignment must ensure:
 - All mapped address segments are of equal size.
 However, not all the addresses must be used; accessing unused addresses will return an error status code.
 
-<detials>
+<details>
 <summary> Quiz </summary>
 Which one of the following is a valid AXI4-MM address assignment?
 <div align="center">
 <img src="images/quiz2.png"/>
 </div>
-
-<detials>
+<details>
 <summary> Answer </summary>
 A <br>
 B maps one master segment to multiple slave segments.
-</detials>
-
-</detials>
+</details>
+</details>
 
 ## 3. Example of Multi-Master AXI4-MM System
 to be finished.
