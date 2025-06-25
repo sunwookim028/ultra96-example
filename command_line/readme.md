@@ -82,7 +82,7 @@ rm -r build_vivado
 ```
 Now you should have a `build_hls` directory, a `project_1.tcl` file, and a readme file (this file) in the `command_line` directory.
 
-We need to make some tweaks to the paths in the tcl script to make it work. Open the `project_1.tcl` file in a text editor, and change all occurances of `$origin_dir/../../quickstart/src` to `$origin_dir/..`. There should be only 3 occurances.
+We need to make some tweaks to the paths in the tcl script to make it work. Open the `project_1.tcl` file in a text editor, and change all occurances of `$origin_dir/../../quickstart/src` to `$origin_dir/..`, and also `${origin_dir}/../../quickstart/src` to `$origin_dir/..`.
 This is because when exporting the script, Vivado will assume you still want to refer to the original source files, which are in the `quickstart/src` directory. So it calculates the relative path from where the script is exported to the original source files. But here we have copied the source files to the `command_line/build_hls` directory, so we need to change the path to refer to the current directory instead.
 
 > At line 50, `$origin_dir` is default to the directory where the script is executed.
@@ -260,6 +260,13 @@ design_1_i/clk_wiz_0/inst/clk_in1  {0.000 5.000}      10.000          100.000
   clk_out1_design_1_clk_wiz_0_0    {0.000 5.000}      10.000          100.000
 ```
 which the output clock frequency of the Clock Wizard IP is set to 100 MHz, as we specified in the command line argument.
+
+## 5. (Optional) Trim the script
+Near the end of the exported script, there are some commands creating various of gadgets. These gadgets are used to display the project information in the Vivado GUI, but they are not needed when running the script from command line.
+There are also some unecessary commands to set the block design layout at the end of the `cr_bd_design_1` process.
+You can safely remove them to make the script cleaner.
+
+Just above the gadget part, Vivado also creates a bunch of reports, many of which are incremental. If you are clear about which reports you need, you can also trim this part to make the script just right for your needs.
 
 ## Conclusion
 This tutorial shows how to export a tcl script for a Vivado project, run it from command line, and some simple customizations.
