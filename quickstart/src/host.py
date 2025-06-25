@@ -28,6 +28,9 @@ def main():
     # Create the input vectors
     a:PynqBuffer = pynq.allocate(size, dtype=np.float32)
     b:PynqBuffer = pynq.allocate(size, dtype=np.float32)
+    for i in range(size):
+        a[i] = np.random.rand()
+        b[i] = np.random.rand()
 
     # Compute the reference output and time it
     start_time = time.perf_counter()
