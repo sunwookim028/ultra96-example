@@ -40,4 +40,4 @@ On the Ultra96-V2 board we are using, it runs Python 3.6.5 with PYNQ 2.6.0.
 ## The Tutorial
 1. [Quick Start](quickstart/readme.md): A quick start guide to get you familiar development flow.
 2. [Command Line Scripting](command_line/readme.md): How to use tcl scripts to automate the development flow.
-3. [AXI4 101](axi_101/readme.md): A brief introduction to the AXI4 memory-mapped interface.
+3. [AXI4-MM 101](AXI4-MM_101/readme.md): A brief introduction to the AXI4 memory-mapped interface.
