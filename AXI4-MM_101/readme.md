@@ -7,7 +7,6 @@ This tutorial briefly introduces the AXI4 memory-mapped interface, which is used
 A Linux machine with:
 - Vitis HLS 2023.2
 - Vivado 2023.2
-- Graphical interface (either you directly run a GUI Linux OS like Ubuntu Desktop, or use a remote desktop solution)
 - Access to a PYNQ Ultra96-V2 board
 
 ## 1. What is AXI4 Memory-Mapped Interface?
@@ -185,8 +184,8 @@ set_property CONFIG.RESET_TYPE {ACTIVE_LOW} $clk_wiz_0
 The Zynq Processor Core:
 ```tcl
 set zynq_ultra_ps_e_0 [create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 zynq_ultra_ps_e_0]
-set_property CONFIG.PSU__USE__S_AXI_GP0 1
-set_property CONFIG.PSU__SAXIGP0__DATA_WIDTH 32
+set_property CONFIG.PSU__USE__S_AXI_GP0 1 $zynq_ultra_ps_e_0
+set_property CONFIG.PSU__SAXIGP0__DATA_WIDTH 32 $zynq_ultra_ps_e_0
 ```
 
 Two AXI Smart connects: one for control, the other for data. We will configure them later.
@@ -227,7 +226,7 @@ connect_bd_intf_net [get_bd_intf_pins vvadd_1/m_axi_gmem] [get_bd_intf_pins data
 connect_bd_intf_net [get_bd_intf_pins data_axi_smc/M00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HPC0_FPD]
 
 # for the control AXI network
-connect_bd_intf_net [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPC0_FPD] [get_bd_intf_pins ctrl_axi_smc/S00_AXI]
+connect_bd_intf_net [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_LPD] [get_bd_intf_pins ctrl_axi_smc/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins ctrl_axi_smc/M00_AXI] [get_bd_intf_pins vvadd_0/s_axi_control]
 connect_bd_intf_net [get_bd_intf_pins ctrl_axi_smc/M01_AXI] [get_bd_intf_pins vvadd_1/s_axi_control]
 ```
@@ -343,7 +342,7 @@ connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins ctrl_axi_smc
 Now let's deal with reset signals. The processor outputs a `pl_resetn0` signal to reset the user logic. However, it is in the 100MHz domain and cannot be directly connected to the `ap_rst_n` signals of the vvadd kernels. Vivado provides an CDC IP for reset signals, named "Processor System Reset". We create an instance of it and connect it:
 ```tcl
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 reset_200M
-connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0] [get_bd_pins reset_200M/ext_reset_in]
+connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0] [get_bd_pins reset_200M/ext_reset_in] [get_bd_pins clk_wiz_0/resetn]
 connect_bd_net [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins reset_200M/slowest_sync_clk]
 connect_bd_net [get_bd_pins clk_wiz_0/locked] [get_bd_pins reset_200M/dcm_locked]
 connect_bd_net [get_bd_pins reset_200M/peripheral_aresetn] [get_bd_pins vvadd_0/ap_rst_n] [get_bd_pins vvadd_1/ap_rst_n] [get_bd_pins data_axi_smc/aresetn] [get_bd_pins ctrl_axi_smc/aresetn]
@@ -363,21 +362,33 @@ close_bd_design multi_vvadd_bd
 
 Next, we use the `make_wrapper` command to create the RTL wrapper for the block design:
 ```tcl
-make_wrapper -fileset sources_1 -files [get_files multi_vvadd_bd.bd] -top
+set_property REGISTERED_WITH_MANAGER "1" [get_files multi_vvadd_bd.bd]
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files multi_vvadd_bd.bd]
+set wrapper_file [make_wrapper -fileset sources_1 -files [get_files multi_vvadd_bd.bd] -top]
 ```
-`-top` means we mark it as the top-level module of the project.
+
+Then, add the wrapper file to the project and set it as the top-level module:
+```tcl
+add_files -norecurse -fileset [get_filesets sources_1] $wrapper_file
+set_property top multi_vvadd_bd_wrapper [get_filesets sources_1]
+update_compile_order -fileset sources_1
+```
 
 #### 3.2.5 Setup Synthesis and Implementation Runs
 Vivado manages synthesis and implementation tasks by **runs**. Each run has a name and a set of properties to control its behavior. We use the `create_run` command to create new runs and configure the run and report strategies:
 ```tcl
 # synthesis run "synth_1"
-create_run -name synth_1 -part xczu3eg-sbva484-1-i
+if {[string equal [get_runs -quiet synth_1] ""]} {
+    create_run -flow "Vivado Synthesis 2023" -name synth_1 -part xczu3eg-sbva484-1-i
+}
 set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
 set_property report_strategy "Vivado Synthesis Default Reports" [get_runs synth_1]
 
 # implementation run "impl_1"
 # it's a child run of "synth_1" since implementation depends on synthesis
-create_run -name impl_1 -part xczu3eg-sbva484-1-i -parent_run [get_runs synth_1]
+if {[string equal [get_runs -quiet impl_1] ""]} {
+    create_run -flow "Vivado Implementation 2023" -name impl_1 -part xczu3eg-sbva484-1-i -parent_run [get_runs synth_1]
+}
 set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
 set_property report_strategy "Vivado Implementation Default Reports" [get_runs impl_1]
 ```
@@ -389,13 +400,27 @@ launch_runs impl_1 -to_step write_bitstream
 wait_on_run impl_1
 ```
 Since `impl_1` is a child run of `synth_1`, it will automatically run the synthesis step.
-After the implementation run is finished, we should see the bitstream file at `build_vivado/multi_vvadd.runs/impl_1/multi_vvadd_wrapper.bit`.
+
+### 3.3 Run the script
+After the script is written, we can run it with Vivado command line:
+```bash
+vivado -mode batch -source vivado.tcl
+```
+
+When the run finishes, we should be able to find the following files for deployment:
+ - Bitstream: `build_vivado/multi_vvadd.runs/impl_1/multi_vvadd_wrapper.bit`
+ - Hardware handoff: `build_vivado/multi_vvadd.gen/sources_1/bd/multi_vvadd_bd/hw_handoff/multi_vvadd_bd.hwh`
+
+### 3.4 Run the design on the board
+to be finished.
 
 ## Homework (optional)
-How to extend the tcl script to support any number of vvadd instances? You may want to use loops and string-formatting functions to achieve this.
+How to extend the tcl script to support any number of vvadd instances?
+
+You may want to use loops and string-formatting commands to achieve this.
 
 ## Final Comments
-Vivado is a tool with thousands of commands and options, which cannot be covered in any tutorial. Mastering it requires years of practice. When working on various designs, I recommend you pay attention to the tcl console at the bottom of the GUI window: every action you take from the GUI will be translated to tcl commands and displayed there. You may also try out the commands in the tcl console in GUI mode to immediately see their effects (e.g., when creating a block design).
+Vivado is a tool with thousands of commands and options; mastering it requires years of practice. When working on various designs, I recommend you pay attention to the tcl console at the bottom of the GUI window: every action you take from the GUI will be translated to tcl commands and displayed there. You may also try out the commands in the tcl console in GUI mode to immediately see their effects (e.g., when creating a block design).
 
 Studing the Vivado-exported tcl is also a good way to understand the basic command-line tool flow.
 
